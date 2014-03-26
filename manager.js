@@ -9,26 +9,31 @@
 
 var redis = require('redis'),
     uuid  = require('uuid'),
-    url   = require('url');
+    url   = require('url'),
+    Job = require('./job'),
+    messages = require('./messages'),messageHandler;
 
 
 var JOBS_KEY     = 'ntask:jobs';
-var PENDING_JOBS_KEY = 'ntask:jobs.pending';
-var RUNNING_JOBS_KEY = 'ntask:jobs.running';
 
-var CHANNEL = function(name){
-  return 'ntask:channels/' + name;
+var PENDING_JOBS_KEY = function(name) {
+  return 'ntask:jobs:' + name + '.pending';
+};
+
+var RUNNING_JOBS_KEY = function(name) {
+  return 'ntask:jobs:' + name + '.running';
 };
 
 var JOB_HASH_KEY = function(id) {
-  return 'ntask:job:hash.' + id;
+  return 'ntask:jobs:job.' + id;
 };
 
 
 //Job status:
-//Pending
-//Running
-//Complete
+//PENDIONG
+//RUNNING
+//COMPLETE
+//ERROR
 
 // Start a transaction block, and add
 // The job to the Jobs set
@@ -37,12 +42,12 @@ function writeJobToRedis(job,client) {
 
   var m = client.multi();
 
-  m.lpush(PENDING_JOBS_KEY,job.id);
+  m.lpush(PENDING_JOBS_KEY(job.name),job.id);
   m.sadd(JOBS_KEY,job.id);
 
   job.status = 'PENDING';
   job.input = JSON.stringify(job.input);
-  m.hmset(JOB_HASH_KEY(job.id),job);
+  m.hmset(JOB_HASH_KEY(job.id),job.toHash());
 
   m.exec(function(err) {
     if(err) return console.error(err);
@@ -54,7 +59,7 @@ function writeJobToRedis(job,client) {
 // set the job endtime
 // set the output and results data
 // then save it
-function createJobCompleteCallback(jobId,client) {
+function createJobCompleteCallback(name,jobId,client) {
 
     var jobKey = JOB_HASH_KEY(jobId);
 
@@ -79,7 +84,7 @@ function createJobCompleteCallback(jobId,client) {
           m.hset(jobKey,'results',JSON.stringify(result));
       }
 
-      m.srem(RUNNING_JOBS_KEY,jobId);
+      m.srem(RUNNING_JOBS_KEY(name),jobId);
 
       m.exec(function(err) {
         if(err) { console.error(err); }
@@ -90,11 +95,9 @@ function createJobCompleteCallback(jobId,client) {
 }
 
 
-function getJobFromRedis(client,callback) {
-  client.lpop(PENDING_JOBS_KEY,function(err,jobId) {
+function getJobFromRedis(name,client,callback) {
+  client.lpop(PENDING_JOBS_KEY(name),function(err,jobId) {
     if(err) { return console.error(err); }
-
-    console.log(jobId);
 
     if(jobId === null) {
       return callback();
@@ -105,47 +108,53 @@ function getJobFromRedis(client,callback) {
 
     var jobKey = JOB_HASH_KEY(jobId);
 
-    client.hgetall(jobKey, function(err,job) {
+    client.hgetall(jobKey, function(err,jobHash) {
         if(err) { return console.error(err); }
 
-        var m = client.multi();
-        job.status = 'RUNNING';
-        job.starttime = new Date().toISOString();
+        var workerJob = new Job();
+        workerJob.fromHash(jobHash);
 
-        m.sadd(RUNNING_JOBS_KEY,jobId);
-        m.hmset(jobKey,job);
+        var m = client.multi();
+        workerJob.status = 'RUNNING';
+        workerJob.start = new Date().toISOString();
+
+        m.sadd(RUNNING_JOBS_KEY(name),jobId);
+        m.hset(jobKey,workerJob.status);
+        m.hset(jobKey,workerJob.start);
 
         m.exec(function(err) {
           if(err) { return console.error(err); }
-          job.input = JSON.parse(job.input);
-          return callback(job,createJobCompleteCallback(jobId,client));
+          workerJob.input = JSON.parse(workerJob.input);
 
+          messageHandler.setMessageHandlers(workerJob);
+
+          var onJobComplete = createJobCompleteCallback(name,jobId,client);
+          return callback(workerJob,onJobComplete);
         });
     });
   });
 }
 
 
+
 var manager = function(redisUrl) {
   var uri = url.parse(redisUrl);
 
   var client = redis.createClient( uri.port, uri.hostname);
+  messageHandler = messages(uri.port,uri.hostname);
+
   var obj = {};
 
   obj.addJob = function(name,job) {
-    var id = uuid.v4();
-    job.id = id;
+    job.id = uuid.v4();
     job.name = name;
-
     writeJobToRedis(job,client);
-
-    //todo: wire up channels()
-
-    return id;
+    messageHandler.subscribe(job);
+    return job.id;
   };
 
-  obj.getJob = function(callback) {
-    return getJobFromRedis(client,callback);
+  obj.getJob = function(name,callback) {
+    return getJobFromRedis(name,client,callback);
   };
 
   return obj;

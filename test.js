@@ -1,12 +1,36 @@
 'use strict';
 var jobs = require('./jobs');
 
-jobs.create('Alan',{
-	value: '123',
-	value2: '234'
-});
+var args = process.argv.slice(2);
 
-jobs.process(function(job,callback) {
-	console.log(job);
-	callback(null,'someoutput','this is my result');
-});
+
+if(args[0] === '--create') {
+
+	var job = jobs.create('job-type1',{
+		value: '123',
+		value2: '234'
+	});
+
+	job.on('update',function(data) {
+		console.log(data);
+	});
+
+	job = jobs.create('job-type1',{
+		value: '123',
+		value2: '234'
+	});
+
+	job.on('update',function(data) {
+		console.log(data);
+	});
+
+} else {
+	jobs.process('job-type1',function(job,callback) {
+		if(!job) {
+			return console.log('no job');
+		}
+
+		job.update(job.id + ': this is a job update!');
+		callback(null,'someoutput','this is my result');
+	});
+}
