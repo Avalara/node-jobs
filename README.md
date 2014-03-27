@@ -21,7 +21,7 @@ Creating a job, you specify the name of the job, and the data (input) you want t
 ```
   jobs.create(name,jobdata);
 
-  var clawJob = jobs.create('clawjob',{
+  var clawjob = jobs.create('clawjob',{
      input1: 'someValue',
      input2: 'someValue2',
   });

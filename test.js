@@ -32,8 +32,6 @@ if(args[0] === '--create') {
 		console.log('Processing job: ' + job.id);
 		job.update(job.id + ': this is a job update!');
 		job.complete('yay done');
-		setTimeout(function() {
-			callback(null,'someoutput','this is my result');
-		},10000);
+		callback(null,'someoutput','this is my result');
 	});
 }
