@@ -1,5 +1,5 @@
 'use strict';
-var jobs = require('./index');
+var jobs = require('./index').init('redis://localhost:6379/0');
 
 var args = process.argv.slice(2);
 

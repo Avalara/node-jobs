@@ -59,6 +59,15 @@ The callback is passed the job, and a callback which must be invoked when you ar
   
 ```
 
+## TODO
+
+1. Documetation
+1. Web Dashboard
+1. Job Monitoring
+1. Stats
+1. Worker Tracking
+1. Graceful Shutdown of Redis client
+
 ## Rationale
 
 Why yet another queue system? Unfortunately the options were limited for nodejs. Kue has a great interface, but lacks the ability to easily capture data for  a job run (for example, `stdout` and `stderr` for a shell command. While Kue has nifty features, like priorities, and delayed jobs, those things have increased the complexity. If you need delayed jobs, use `cron`.
