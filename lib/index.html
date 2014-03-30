@@ -34,7 +34,7 @@
 	controller('AppCtrl',function($scope,Jobs,Queues) {
 		console.log('hi');
 		$scope.model = {
-			'welcome': 'Welcome to your Doom!'
+			'title': 'Node Jobs Web Console'
 		};
 
 		Jobs.query(function(data) {
@@ -48,7 +48,7 @@
 	<div class='container' ng-controller='AppCtrl'>
 		<div class='col-md-12'>
 			<div class='row'>
-				<h1>{{model.welcome}}</h1>
+				<h1>{{model.title}}</h1>
 				<div class='panel' ng-repeat='job in model.jobs'>
 					<div>{{job.name}}</div>
 					<div>{{job.id}}</div>
