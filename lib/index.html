@@ -1,0 +1,67 @@
+<!DOCTYPE HTML>
+<HTML ng-app='nodejobs'>
+<HEAD>
+	<TITLE>Node Job Manager</TITLE>
+	<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+	<script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1-beta1/jquery.min.js'></script>
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js'></script>
+	<script type="text/javascript" src='//ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.js'></script>
+	<script>
+
+	angular.module('nodejobs',[
+		'ngResource',
+		'nodejobs.controllers',
+		'nodejobs.services']
+	);
+
+	angular.module('nodejobs.services',[]).
+	factory('Jobs',function($resource) {
+		return $resource('/jobs',{},{
+			details: { method: 'GET',url: '/jobs/:jobid',isArray: false},
+			remove: {method: 'DELETE',url: '/jobs/:jobid'},
+			restart: {method: 'POST',url: 'jobs/:jobid/restart'},
+			clone: {method: 'POST',url: 'jobs/:jobid/clone'},
+		});
+	}).
+	factory('Queues',function($resource) {
+		return $resource('/queues',{}, {
+			details: {method: 'GET',url: '/queues/:name'}
+		});
+	});
+
+	angular.module('nodejobs.controllers',[]).
+	controller('AppCtrl',function($scope,Jobs,Queues) {
+		console.log('hi');
+		$scope.model = {
+			'welcome': 'Welcome to your Doom!'
+		};
+
+		Jobs.query(function(data) {
+			$scope.model.jobs = data;
+		});
+	});
+
+	</script>
+</HEAD>
+<BODY>
+	<div class='container' ng-controller='AppCtrl'>
+		<div class='col-md-12'>
+			<div class='row'>
+				<h1>{{model.welcome}}</h1>
+				<div class='panel' ng-repeat='job in model.jobs'>
+					<div>{{job.name}}</div>
+					<div>{{job.id}}</div>
+					<div>{{job.status}}</div>
+					<div>{{job.start}}</div>
+					<div>{{job.end}}</div>
+					<div>{{job.input}}</div>
+					<div>{{job.output}}</div>
+					<div>{{job.results}}</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</BODY>
+</HTML>

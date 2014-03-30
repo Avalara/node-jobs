@@ -23,6 +23,8 @@ if(args[0] === '--create') {
 
 	setInterval(createJobs,5000);
 
+} else if (args[0] === '--web') {
+	jobs.startServer(8888);
 } else {
 	jobs.process('job-type1',2,function(job,callback) {
 		if(!job) {
