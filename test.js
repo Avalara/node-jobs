@@ -16,6 +16,9 @@ if(args[0] === '--create') {
 
 			job.on('update',log);
 			job.on('complete',log);
+			job.on('error',function(data) {
+				console.error(data);
+			})
 		}
 	};
 
@@ -34,6 +37,7 @@ if(args[0] === '--create') {
 		console.log('Processing job: ' + job.id);
 		job.update(job.id + ': this is a job update!');
 		job.complete('yay done');
+		job.error('some error happened');
 		callback(null,'someoutput','this is my result');
 	});
 }

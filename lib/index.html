@@ -18,15 +18,15 @@
 	angular.module('nodejobs.services',[]).
 	factory('Jobs',function($resource) {
 		return $resource('/jobs',{},{
-			details: { method: 'GET',url: '/jobs/:jobid',isArray: false},
-			remove: {method: 'DELETE',url: '/jobs/:jobid'},
-			restart: {method: 'POST',url: 'jobs/:jobid/restart'},
-			clone: {method: 'POST',url: 'jobs/:jobid/clone'},
+			details: { method: 'GET',url: '/jobs/:jobid', params: {'jobid':'@id'} ,isArray: false},
+			remove: {method: 'DELETE',url: '/jobs/:jobid', params:  {'jobid':'@id'}},
+			restart: {method: 'POST',url: 'jobs/:jobid/restart', params: {'jobid':'@id'}},
+			clone: {method: 'POST',url: 'jobs/:jobid/clone', params: {'jobid':'@id'}},
 		});
 	}).
 	factory('Queues',function($resource) {
 		return $resource('/queues',{}, {
-			details: {method: 'GET',url: '/queues/:name'}
+			details: {method: 'GET',url: '/queues/:name',params:  {'name':'@id'} }
 		});
 	});
 
@@ -40,6 +40,11 @@
 		Jobs.query(function(data) {
 			$scope.model.jobs = data;
 		});
+
+		$scope.restart = function(jobid) {
+			Jobs.restart({'id':jobid});
+		};
+
 	});
 
 	</script>
@@ -58,6 +63,7 @@
 					<div>{{job.input}}</div>
 					<div>{{job.output}}</div>
 					<div>{{job.results}}</div>
+					<a href='#' ng-click='restart(job.id)'>Restart Job</a>
 				</div>
 			</div>
 		</div>
