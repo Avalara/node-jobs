@@ -34,6 +34,10 @@ Creating a job, you specify the name of the job, and the data (input) you want t
     // Do something with results...
   });
 
+  clawjob.on('error',function(error) {
+    // Do something with error...
+  });
+
 ```
 
 ### Processing a Job
@@ -59,10 +63,22 @@ The callback is passed the job, and a callback which must be invoked when you ar
   
 ```
 
+### Web Console
+
+`node-jobs` ships with a light-weight web console to monitor jobs. The console also provides restart, and clone functionality in addition to inspecting jobs.
+
+To start the web console:
+
+```
+  jobs.startServer(port);
+```
+
+If port isn't specified, the web server will start on port 31337.
+
 ## TODO
 
 1. Documetation
-1. Web Dashboard
+1. Web Dashboard Styling
 1. Job Monitoring
 1. Stats
 1. Worker Tracking
