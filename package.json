@@ -1,6 +1,6 @@
 {
   "name": "node-jobs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Robust Job Manager using Redis.",
   "main": "index.js",
   "scripts": {
