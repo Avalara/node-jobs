@@ -8,7 +8,7 @@
 	<script type="text/javascript" src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.15/angular.min.js'></script>
 	<script type="text/javascript" src='//ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.js'></script>
 	<script>
-
+	'use strict';
 	angular.module('nodejobs',[
 		'ngResource',
 		'nodejobs.controllers',
@@ -22,48 +22,184 @@
 			remove: {method: 'DELETE',url: '/jobs/:jobid', params:  {'jobid':'@id'}},
 			restart: {method: 'POST',url: 'jobs/:jobid/restart', params: {'jobid':'@id'}},
 			clone: {method: 'POST',url: 'jobs/:jobid/clone', params: {'jobid':'@id'}},
+			stop: {method: 'POST',url: 'jobs/:jobid/stop', params: {'jobid':'@id'}}
 		});
 	}).
 	factory('Queues',function($resource) {
 		return $resource('/queues',{}, {
-			details: {method: 'GET',url: '/queues/:name',params:  {'name':'@id'} }
+			details: {method: 'GET',url: '/queues/:name',params:  {'name':'@name'} },
+			purge: {method: 'POST',url: '/queues/:name/purge',params: {'name':'@name'}}
 		});
 	});
 
 	angular.module('nodejobs.controllers',[]).
 	controller('AppCtrl',function($scope,Jobs,Queues) {
-		console.log('hi');
 		$scope.model = {
-			'title': 'Node Jobs Web Console'
+			title: 'Node Jobs Web Console',
+			jobs: Jobs.query(),
+			queues: Queues.get()
 		};
 
-		Jobs.query(function(data) {
-			$scope.model.jobs = data;
-		});
+		$scope.refreshJobs = function() {
+			$scope.model.jobs = Jobs.query();
+		}
+
+		$scope.refreshQueues = function() {
+			$scope.model.queues = Queues.get();
+		}
 
 		$scope.restart = function(jobid) {
 			Jobs.restart({'id':jobid});
+			$scope.refreshJobs();
 		};
 
-	});
+		$scope.remove = function(jobid) {
+			Jobs.remove({},{'id':jobid});
+			$scope.refreshJobs();
+		};
 
+		$scope.clone = function(jobid) {
+			Jobs.clone({'id': jobid});
+			$scope.refreshJobs();
+		};
+
+		$scope.stop = function(jobid) {
+			Jobs.stop({'id':jobid});
+			$scope.refreshJobs();
+		};
+
+		$scope.showJobDetails = function(jobid) {
+			return Jobs.details({},{'id':jobid});
+		};
+
+		$scope.getQueue = function(queue) {
+			return Queues.details({'name': queue});
+		}
+
+		$scope.purgeQueue = function(queue) {
+			Queues.purge({},{'name': queue});
+		}
+
+		$scope.getLabelStyle = function(jobStatus) {
+			switch(jobStatus) {
+				case 'PENDING':
+					return 'label-warning';
+				case 'ERROR':
+					return 'label-danger';
+				case 'COMPLETE':
+					return 'label-success';
+				case 'RUNNING':
+					return 'label-info'
+				default:
+					return 'label-default';
+			}
+		}
+	});
 	</script>
+	<style>
+		tbody tr {cursor: pointer;}
+		textarea {width: 100%; height: 70px;}
+	</style>
+
 </HEAD>
 <BODY>
 	<div class='container' ng-controller='AppCtrl'>
 		<div class='col-md-12'>
 			<div class='row'>
 				<h1>{{model.title}}</h1>
-				<div class='panel' ng-repeat='job in model.jobs'>
-					<div>{{job.name}}</div>
-					<div>{{job.id}}</div>
-					<div>{{job.status}}</div>
-					<div>{{job.start}}</div>
-					<div>{{job.end}}</div>
-					<div>{{job.input}}</div>
-					<div>{{job.output}}</div>
-					<div>{{job.results}}</div>
-					<a href='#' ng-click='restart(job.id)'>Restart Job</a>
+
+				<h2>
+					Job Queues
+					<a class='h4' href='javascript:void(0);' ng-click='refreshQueues()' >refresh</a>
+				</h2>
+				<div ng-repeat='q in model.queues.queues' ng-model='m'>
+					<a class='h3' href='javascript:void(0);' ng-click='showQ = !showQ;m=getQueue(q)' ng-init='showQ = false'>{{q}}</a>
+					<a class='h4' href='javascript:void(0);' ng-click='m=getQueue(q)'>refresh</a>
+					<a class='h4' href='javascript:void(0);' ng-click='purgeQueue(q)'>purge</a>
+					<table ng-show='showQ' class='table table-bordered'>
+						<thead>
+							<tr>
+								<th style='width: 10%'>Position</th>
+								<th>Job ID</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat='data in m.queue track by $index' ng-click='model.job=showJobDetails(data)' data-toggle='modal' data-target='#jobModal'>
+								<td>{{$index}}</td>
+								<td>{{data}}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<h2>Jobs
+					<a href='javascript:void(0);' ng-click='refreshJobs()' class='h4'>refresh</a>
+				</h2>
+				<table class='table table-bordered table-striped table-hover' ng-init='predicate="";reverse=false'>
+					<thead>
+						<tr>
+							<th><a href='javascript:void(0);' ng-click='predicate="name";reverse=!reverse'>Job Type</a></th>
+							<th><a href='javascript:void(0);' ng-click='predicate="id";reverse=!reverse'>Id</a></th>
+							<th><a href='javascript:void(0);' ng-click='predicate="status";reverse=!reverse'>Status</a></th>
+							<th><a href='javascript:void(0);' ng-click='predicate="start";reverse=!reverse'>Start</a></th>
+							<th><a href='javascript:void(0);' ng-click='predicate="end";reverse=!reverse'>End</a></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr ng-repeat='job in model.jobs | orderBy:predicate:reverse' ng-click='model.job=showJobDetails(job.id)' data-toggle='modal' data-target='#jobModal'>
+							<td>{{job.name}}</td>
+							<td>{{job.id}}</td>
+							<td>
+							<span class='label' ng-class='getLabelStyle(job.status)' >{{job.status}}</span>
+							</td>
+							<td>{{job.start | date:'short' }}</td>
+							<td>{{job.end | date:'short' }}</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div id='jobModal' class='modal'>
+					<div class='modal-dialog'>
+						<div class='modal-content'>
+							<div class='modal-header'>
+								<button type='button' class='close' data-dismiss='modal' aria-hidden='true'>&times;</button>
+								<h4 class='modal-title'>Job: {{model.job.name}}</h4>
+							</div>
+							<div class='modal-body' ng-model='job'>
+								<label>Name:</label>
+								<div>{{model.job.name}}</div>
+
+								<label>Id:</label>
+								<div>{{model.job.id}}</div>
+								<label>Status:</label>
+								<div>{{model.job.status}}</div>
+								<label>Job Start:</label>
+								<div>{{model.job.start | date:'short'}}</div>
+								<label>Job End:</label>
+								<div>{{model.job.end | date:'short'}}</div>
+								<label>Name:</label>
+								<div>
+									<textarea readonly>{{model.job.input}}</textarea>
+								</div>
+								<label>Name:</label>
+								<div>
+									<textarea readonly>{{model.job.output}}</textarea>
+								</div>
+								<label>Name:</label>
+								<div>
+									<textarea readonly>{{model.job.results}}</textarea>
+								</div>
+								<a class='btn btn-info' href='javascript:void(0);' ng-click='clone(model.job.id)'>Clone Job</a>
+								<a class='btn btn-info' href='javascript:void(0);' ng-click='restart(model.job.id)'>Restart Job</a>
+								<a class='btn btn-warning' href='javascript:void(0);' ng-click='stop(model.job.id)'>Stop Job</a>
+								<a class='btn btn-danger' href='javascript:void(0);' ng-click='expire(model.job.id)'>Expire Job</a>
+								<a class='btn btn-danger' href='javascript:void(0);' ng-click='remove(model.job.id)'>Remove Job</a>
+							</div>
+
+							<div class='modal-footer'>
+								<button type='button' class='btn btn-primary' data-dismiss='modal'>Close</button>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
