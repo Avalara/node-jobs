@@ -1,10 +1,10 @@
 'use strict';
-var jobs = require('./index').init('redis://localhost:6379/0');
 
 var args = process.argv.slice(2);
 
 if(args[0] === '--create') {
 
+	var jobs = require('./index').init('redis://localhost:6379/0');
 	var log = function(data) {console.log(data); };
 
 	var createJobs = function() {
@@ -27,7 +27,15 @@ if(args[0] === '--create') {
 	setInterval(createJobs,5000);
 
 } else if (args[0] === '--web') {
+
+	if(args[1]) {
+		var jobs = require('./index').init(args[1]);
+	} else {
+		var jobs = require('./index').init('redis://localhost:6379/0');
+	}
+
 	jobs.startServer(8888);
+
 } else {
 	jobs.process('job-type1',2,function(job,callback) {
 		if(!job) {

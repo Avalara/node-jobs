@@ -137,6 +137,7 @@
 				<table class='table table-bordered table-striped table-hover' ng-init='predicate="";reverse=false'>
 					<thead>
 						<tr>
+							<th><input type='checkbox'></th>
 							<th><a href='javascript:void(0);' ng-click='predicate="name";reverse=!reverse'>Job Type</a></th>
 							<th><a href='javascript:void(0);' ng-click='predicate="id";reverse=!reverse'>Id</a></th>
 							<th><a href='javascript:void(0);' ng-click='predicate="status";reverse=!reverse'>Status</a></th>
@@ -146,6 +147,7 @@
 					</thead>
 					<tbody>
 						<tr ng-repeat='job in model.jobs | orderBy:predicate:reverse' ng-click='model.job=showJobDetails(job.id)' data-toggle='modal' data-target='#jobModal'>
+							<td><input type='checkbox' id='{{job.id}}'></td>
 							<td>{{job.name}}</td>
 							<td>{{job.id}}</td>
 							<td>
@@ -188,11 +190,11 @@
 								<div>
 									<textarea readonly>{{model.job.results}}</textarea>
 								</div>
-								<a class='btn btn-info' href='javascript:void(0);' ng-click='clone(model.job.id)'>Clone Job</a>
-								<a class='btn btn-info' href='javascript:void(0);' ng-click='restart(model.job.id)'>Restart Job</a>
-								<a class='btn btn-warning' href='javascript:void(0);' ng-click='stop(model.job.id)'>Stop Job</a>
-								<a class='btn btn-danger' href='javascript:void(0);' ng-click='expire(model.job.id)'>Expire Job</a>
-								<a class='btn btn-danger' href='javascript:void(0);' ng-click='remove(model.job.id)'>Remove Job</a>
+								<a class='btn btn-info' href='javascript:void(0);' data-dismiss='modal' ng-click='clone(model.job.id)'>Clone Job</a>
+								<a class='btn btn-info' href='javascript:void(0);' data-dismiss='modal' ng-click='restart(model.job.id)'>Restart Job</a>
+								<a class='btn btn-warning' href='javascript:void(0);' data-dismiss='modal' ng-click='stop(model.job.id)'>Stop Job</a>
+								<a class='btn btn-danger' href='javascript:void(0);' data-dismiss='modal' ng-click='expire(model.job.id)'>Expire Job</a>
+								<a class='btn btn-danger' href='javascript:void(0);' data-dismiss='modal' ng-click='remove(model.job.id)'>Remove Job</a>
 							</div>
 
 							<div class='modal-footer'>
